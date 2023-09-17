@@ -7,7 +7,7 @@ import warnings
 warnings.filterwarnings("ignore")
 
 def load_trace_file():
-    trace_file = 'datasets/mawi_packet_trace_1.csv'
+    trace_file = 'datasets/mawi_packet_trace.csv'
     packets = pd.read_csv(trace_file)
 
     return packets
