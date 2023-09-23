@@ -20,15 +20,15 @@ echo
 # Start the Ryu API
 echo "Starting Ryu Rest API....."
 echo
-gnome-terminal -- bash -c 'ryu-manager ryu.app.rest_topology ryu.app.ofctl_rest' &
+# gnome-terminal -- bash -c 'ryu-manager ryu.app.rest_topology ryu.app.ofctl_rest' &
 sleep 3
 echo
 
 # Start your Ryu application
 echo "Starting Ryu controller....."
 echo
-gnome-terminal -- bash -c 'ryu-manager app/my_controller.py' &
-# sleep 3
+gnome-terminal -- bash -c 'ryu-manager app/my_controller.py --verbose' &
+sleep 3
 echo
 
 # Start Mininet
@@ -36,3 +36,4 @@ echo "Creating virtual network....."
 echo
 # sleep 3
 echo "$password" | sudo -S python3 app/virtual_network.py
+

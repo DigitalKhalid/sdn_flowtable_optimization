@@ -36,7 +36,7 @@ class my_controller(app_manager.RyuApp):
         self.flows = {}
 
         self.idle_timeout = min_timeout
-        self.hard_timeout = max_timeout
+        # self.hard_timeout = max_timeout
         self.threshold = flow_table_threshold
         self.start_time = int(time.time())
         
@@ -77,7 +77,7 @@ class my_controller(app_manager.RyuApp):
         self.add_flow(datapath, 0, match, actions)
 
 
-    def add_flow(self, datapath, priority, match, actions, buffer_id=None, idle = min_timeout, hard = max_timeout):
+    def add_flow(self, datapath, priority, match, actions, buffer_id=None, idle = min_timeout):
         ofproto = datapath.ofproto
         parser = datapath.ofproto_parser
 
@@ -89,11 +89,11 @@ class my_controller(app_manager.RyuApp):
         if buffer_id:
             mod = parser.OFPFlowMod(datapath=datapath, cookie=cookie_id, buffer_id=buffer_id,
                                     priority=priority, match=match,
-                                    idle_timeout=idle, hard_timeout=hard, flags=ofproto.OFPFF_SEND_FLOW_REM,
+                                    idle_timeout=idle, flags=ofproto.OFPFF_SEND_FLOW_REM,
                                     instructions=inst)
         else:
             mod = parser.OFPFlowMod(datapath=datapath, cookie=cookie_id, priority=priority,
-                                    idle_timeout=idle, hard_timeout=hard, flags=ofproto.OFPFF_SEND_FLOW_REM,
+                                    idle_timeout=idle, flags=ofproto.OFPFF_SEND_FLOW_REM,
                                     match=match, instructions=inst)
         
         datapath.send_msg(mod)
@@ -131,10 +131,10 @@ class my_controller(app_manager.RyuApp):
             reason = 'HARD TIMEOUT'
 
         elif msg.reason == ofproto.OFPRR_DELETE:
-            reason = 'Proactive Deletion'
+            reason = 'Deletion'
 
         elif msg.reason == ofproto.OFPRR_GROUP_DELETE:
-            reason = 'Proactive Group Deletion'
+            reason = 'Group Deletion'
 
         else:
             reason = 'unknown'
@@ -180,51 +180,50 @@ class my_controller(app_manager.RyuApp):
         else:
             out_port = ofproto.OFPP_FLOOD
 
-        actions = [parser.OFPActionOutput(out_port)]
+        self.logger.info(f'Outport: {out_port}')
+        actions = [parser.OFPActionOutput(out_port)]      
 
-        # Install flow rule to avoid packet in next time.
-        if out_port != ofproto.OFPP_FLOOD:
+        # Check if the Ethernet frame contains an IP packet
+        if eth.ethertype == ether_types.ETH_TYPE_IP:
+            ip_pkt = pkt.get_protocol(ipv4.ipv4)
+            # Extract the protocol
+            src_ip = ip_pkt.src
+            dst_ip = ip_pkt.dst
+            proto = ip_pkt.proto
+            src_port = 0
+            dst_port = 0
 
-            # Check if the Ethernet frame contains an IP packet
-            if eth.ethertype == ether_types.ETH_TYPE_IP:
-                ip_pkt = pkt.get_protocol(ipv4.ipv4)
-                # Extract the protocol
-                src_ip = ip_pkt.src
-                dst_ip = ip_pkt.dst
-                proto = ip_pkt.proto
-                src_port = 0
-                dst_port = 0
+            # Check if the IP packet contains a TCP or UDP packet
+            if proto == in_proto.IPPROTO_TCP: # For TCP packet
+                tp_pkt = pkt.get_protocol(tcp.tcp)
+                src_port = tp_pkt.src_port
+                dst_port = tp_pkt.dst_port
 
-                # Check if the IP packet contains a TCP or UDP packet
-                if proto == in_proto.IPPROTO_TCP: # For TCP packet
-                    tp_pkt = pkt.get_protocol(tcp.tcp)
-                    src_port = tp_pkt.src_port
-                    dst_port = tp_pkt.dst_port
+            elif proto == in_proto.IPPROTO_UDP: # For UDP packet
+                up_pkt = pkt.get_protocol(udp.udp)
+                src_port = up_pkt.src_port
+                dst_port = up_pkt.dst_port
 
-                elif proto == in_proto.IPPROTO_UDP: # For UDP packet
-                    up_pkt = pkt.get_protocol(udp.udp)
-                    src_port = up_pkt.src_port
-                    dst_port = up_pkt.dst_port
+            # Extract the packet size (length)
+            pkt_size = len(msg.data)
 
-                # Extract the packet size (length)
-                pkt_size = len(msg.data)
+            # self.logger.info(f'\nPacket injected to ingress port ML model with Features:\nSource Port: {src_port}, Destination Port: {dst_port}, Protocol: {proto}, Pkt Size: {pkt_size}\n')
 
-                # self.logger.info(f'\nPacket injected to ingress port ML model with Features:\nSource Port: {src_port}, Destination Port: {dst_port}, Protocol: {proto}, Pkt Size: {pkt_size}\n')
+            # Add flow rule to avoid packet in again
+            if proto == in_proto.IPPROTO_TCP:
+                match = parser.OFPMatch(eth_type=ether_types.ETH_TYPE_IP, ipv4_src=src_ip, ipv4_dst=dst_ip, ip_proto=proto, tcp_src=src_port, tcp_dst=dst_port)
 
-                # Add flow rule to avoid packet in again
-                if proto == in_proto.IPPROTO_TCP:
-                    match = parser.OFPMatch(eth_type=ether_types.ETH_TYPE_IP, ipv4_src=src_ip, ipv4_dst=dst_ip, ip_proto=proto, tcp_src=src_port, tcp_dst=dst_port)
+            elif proto == in_proto.IPPROTO_UDP:
+                match = parser.OFPMatch(eth_type=ether_types.ETH_TYPE_IP, ipv4_src=src_ip, ipv4_dst=dst_ip, ip_proto=proto, udp_src=src_port, udp_dst=dst_port)
 
-                elif proto == in_proto.IPPROTO_UDP:
-                    match = parser.OFPMatch(eth_type=ether_types.ETH_TYPE_IP, ipv4_src=src_ip, ipv4_dst=dst_ip, ip_proto=proto, udp_src=src_port, udp_dst=dst_port)
-
-                elif proto == in_proto.IPPROTO_ICMP:
-                    match = parser.OFPMatch(eth_type=ether_types.ETH_TYPE_IP, ipv4_src=src_ip, ipv4_dst=dst_ip, ip_proto=proto)
-                
+            elif proto == in_proto.IPPROTO_ICMP:
+                match = parser.OFPMatch(eth_type=ether_types.ETH_TYPE_IP, ipv4_src=src_ip, ipv4_dst=dst_ip, ip_proto=proto)
+            
+            if msg.cookie not in self.flows[datapath.id]:
                 if predict_timeout == True:
                     features = [src_ip, dst_ip, src_port, dst_port, proto, pkt_size]
                     
-                    # Use the machine learning model to predict flow type at ingress port
+                    # Use the machine learning model to predict flow type
                     features_norm = self.scaler.transform([features[2:6]])
                     flow_class = self.model.predict(features_norm)
                     flow_class = flow_class[0]
@@ -236,24 +235,24 @@ class my_controller(app_manager.RyuApp):
                     self.add_log(log, self.log_file)
 
                     # Take action based on the prediction
-                    if msg.buffer_id != ofproto.OFP_NO_BUFFER:
-                        self.add_flow(datapath, 1, match, actions, msg.buffer_id, idle=idle_timeout, hard=self.hard_timeout)
-                        return
-                    
-                    else:
-                        self.add_flow(datapath, 1, match, actions, idle=idle_timeout, hard=self.hard_timeout)
+                    if out_port != ofproto.OFPP_FLOOD:
+                        if msg.buffer_id != ofproto.OFP_NO_BUFFER:
+                            self.add_flow(datapath, 1, match, actions, msg.buffer_id, idle=idle_timeout)
+                        
+                        else:
+                            self.add_flow(datapath, 1, match, actions, idle=idle_timeout)
                 
                 else:
                     # Add Log
                     log = [time.time(), src_ip, dst_ip, src_port, dst_port, proto, pkt_size, self.idle_timeout]
                     self.add_log(log, self.log_file)
 
-                    if msg.buffer_id != ofproto.OFP_NO_BUFFER:
-                        self.add_flow(datapath, 1, match, actions, msg.buffer_id, idle=self.idle_timeout, hard=self.hard_timeout)
-                        return
+                    if out_port != ofproto.OFPP_FLOOD:
+                        if msg.buffer_id != ofproto.OFP_NO_BUFFER:
+                            self.add_flow(datapath, 1, match, actions, msg.buffer_id, idle=self.idle_timeout)
                     
-                    else:
-                        self.add_flow(datapath, 1, match, actions, idle=self.idle_timeout, hard=self.hard_timeout)
+                        else:
+                            self.add_flow(datapath, 1, match, actions, idle=self.idle_timeout)
 
         # Log Flowtable Occupancy on every packet-in
         self.log_ft_occupancy(dpid, self.fto_log_file)
