@@ -13,12 +13,20 @@ Host IP Addresses: ['10.0.0.1', '10.0.0.2', '10.0.0.3', '10.0.0.4', '10.0.0.5']
 ==============================================================================================================
 Packet Injection Overview:
 ==============================================================================================================
-Start Time: 23-09-2023 21:00:59
-End Time: 23-09-2023 21:02:39
-Total Packets Injected: 842
+Start Time: 30-09-2023 23:41:34
+End Time: 30-09-2023 23:43:14
+Total Packets Injected: 874
 Packets injected using the packet trace file from the MAWI dataset.
 The packets injected from the trace file in sequential order.
 
+==============================================================================================================
+Classification Overview:
+==============================================================================================================
+Machine Learning Model: Cost Effective Multiclass Decision Tree Classifierwith best hyperparameters as:Class Weights: [1:1.19, 2:10, 3:16.66],Maximum Tree Depth: 10Minimum Sample Split: 3Criterion: GiniSplitter: BestThe Evaluation Matrix are:Precision: 60%Recall: 70%F1 Score: 61%Accuracy: 81%The dataset is very imbalance, having 84% short flows, 10% medium flows and 6% long flows.
+==============================================================================================================
+Classification Overview:
+==============================================================================================================
+Machine Learning Model: Cost Effective Multiclass Decision Tree Classifierwith best hyperparameters as:Class Weights: [1:1.19, 2:10, 3:16.66],Maximum Tree Depth: 10Minimum Sample Split: 3Criterion: GiniSplitter: BestThe Evaluation Matrix are:Precision: 60%Recall: 70%F1 Score: 61%Accuracy: 81%The dataset is very imbalance, having 84% short flows, 10% medium flows and 6% long flows.
 ==============================================================================================================
 Classification Overview:
 ==============================================================================================================

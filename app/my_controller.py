@@ -16,7 +16,6 @@ from vn_settings import *
 
 warnings.filterwarnings("ignore")
 
-
 flow_cookie = {}
 
 #flow serial number
@@ -60,23 +59,6 @@ class my_controller(app_manager.RyuApp):
         self.summary_created = False
 
 
-    @set_ev_cls(ofp_event.EventOFPSwitchFeatures, CONFIG_DISPATCHER)
-    def switch_features_handler(self, ev):
-        datapath = ev.msg.datapath
-        ofproto = datapath.ofproto
-        parser = datapath.ofproto_parser
-        
-        self.flows.setdefault(datapath.id, {})
-        
-        # install table-miss flow entry
-        match = parser.OFPMatch()
-
-        actions = [parser.OFPActionOutput(ofproto.OFPP_CONTROLLER,
-                                          ofproto.OFPCML_NO_BUFFER)]
-        
-        self.add_flow(datapath, 0, match, actions)
-
-
     def add_flow(self, datapath, priority, match, actions, buffer_id=None, idle = min_timeout):
         ofproto = datapath.ofproto
         parser = datapath.ofproto_parser
@@ -117,6 +99,96 @@ class my_controller(app_manager.RyuApp):
             self.proactive_deletion(datapath)
 
 
+    def get_idle_timeout(self, flow_class):
+        if flow_class == 1:
+            timeout = timeout_short_flow
+        elif flow_class == 2:
+            timeout = timeout_medium_flow
+        elif flow_class == 3:
+            timeout = timeout_long_flow
+
+        return timeout
+
+
+    def send(self, msg, actions):
+        datapath = msg.datapath
+        ofproto = datapath.ofproto
+        parser = datapath.ofproto_parser
+
+        data = None
+        if msg.buffer_id == ofproto.OFP_NO_BUFFER:
+            data = msg.data
+
+        out = parser.OFPPacketOut(datapath=datapath, buffer_id=msg.buffer_id,
+                                  in_port=msg.match['in_port'], actions=actions, data=data)
+        datapath.send_msg(out)
+
+
+    def log_ft_occupancy(self, dpid, fto_log_file):
+        flows = len(self.flows[dpid])
+        log = [time.time(), dpid, flows]
+        self.add_log(log, fto_log_file)
+
+
+    def add_log(self, log, log_file): 
+        self.logger.info(f'\nLog: {log}\n')  
+
+        with open(log_file, 'a', newline = '') as logs:
+            writer = csv.writer(logs)
+            writer.writerow(log)
+
+
+    def get_time(self, timestamp):
+        datetime_obj = datetime.datetime.fromtimestamp(timestamp)
+        dt = datetime_obj.strftime("%d-%m-%Y %H:%M:%S")
+
+        return dt
+    
+
+    def write_summary(self):
+        summary = open(self.summary_file, "a")
+        self.logger.info('Writing summary file')
+        summary.writelines([
+            '\n==============================================================================================================\n',
+            'Classification Overview:\n',
+            '==============================================================================================================\n',
+            'Machine Learning Model: Cost Effective Multiclass Decision Tree Classifier',
+            'with best hyperparameters as:',
+             'Class Weights: [1:1.19, 2:10, 3:16.66],',
+            'Maximum Tree Depth: 10',
+            'Minimum Sample Split: 3',
+            'Criterion: Gini',
+            'Splitter: Best',
+            ''
+            'The Evaluation Matrix are:',
+            'Precision: 60%',
+            'Recall: 70%',
+            'F1 Score: 61%',
+            'Accuracy: 81%',
+            'The dataset is very imbalance, having 84% short flows, 10% medium flows and 6% long flows.',
+            ''
+        ])
+
+        summary.close()
+
+
+    @set_ev_cls(ofp_event.EventOFPSwitchFeatures, CONFIG_DISPATCHER)
+    def switch_features_handler(self, ev):
+        datapath = ev.msg.datapath
+        ofproto = datapath.ofproto
+        parser = datapath.ofproto_parser
+        
+        self.flows.setdefault(datapath.id, {})
+        
+        # install table-miss flow entry
+        match = parser.OFPMatch()
+
+        actions = [parser.OFPActionOutput(ofproto.OFPP_CONTROLLER,
+                                          ofproto.OFPCML_NO_BUFFER)]
+        
+        self.add_flow(datapath, 0, match, actions)
+
+
     @set_ev_cls(ofp_event.EventOFPFlowRemoved, MAIN_DISPATCHER)
     def flow_removed_handler(self, ev):
         msg = ev.msg
@@ -145,6 +217,30 @@ class my_controller(app_manager.RyuApp):
             flows = len(self.flows[dpid])
             log = [time.time(), dpid, flows, reason]
             self.add_log(log, self.fto_log_file)
+
+
+    @set_ev_cls(ofp_event.EventOFPPortStatus, MAIN_DISPATCHER)
+    def _port_status_handler(self, ev):
+        msg = ev.msg
+        reason = msg.reason
+        port_no = msg.desc.port_no
+
+        ofproto = msg.datapath.ofproto
+        if reason == ofproto.OFPPR_ADD:
+            self.logger.info("port added %s", port_no)
+
+        elif reason == ofproto.OFPPR_DELETE:
+            self.logger.info("port deleted %s", port_no)
+
+        elif reason == ofproto.OFPPR_MODIFY:
+            self.logger.info("port modified %s", port_no)
+
+        else:
+            self.logger.info("Illeagal port state %s %s", port_no, reason)
+
+        if self.summary_created == False:
+            self.write_summary()
+            self.summary_created = True
 
 
     @set_ev_cls(ofp_event.EventOFPPacketIn, MAIN_DISPATCHER)
@@ -180,7 +276,7 @@ class my_controller(app_manager.RyuApp):
         else:
             out_port = ofproto.OFPP_FLOOD
 
-        self.logger.info(f'Outport: {out_port}')
+        # self.logger.info(f'Outport: {out_port}')
         actions = [parser.OFPActionOutput(out_port)]      
 
         # Check if the Ethernet frame contains an IP packet
@@ -258,100 +354,3 @@ class my_controller(app_manager.RyuApp):
         self.log_ft_occupancy(dpid, self.fto_log_file)
 
         self.send(msg, actions)
-
-
-    def get_idle_timeout(self, flow_class):
-        if flow_class == 1:
-            timeout = timeout_short_flow
-        elif flow_class == 2:
-            timeout = timeout_medium_flow
-        elif flow_class == 3:
-            timeout = timeout_long_flow
-
-        return timeout
-
-
-    def send(self, msg, actions):
-        datapath = msg.datapath
-        ofproto = datapath.ofproto
-        parser = datapath.ofproto_parser
-
-        data = None
-        if msg.buffer_id == ofproto.OFP_NO_BUFFER:
-            data = msg.data
-
-        out = parser.OFPPacketOut(datapath=datapath, buffer_id=msg.buffer_id,
-                                  in_port=msg.match['in_port'], actions=actions, data=data)
-        datapath.send_msg(out)
-
-
-    def log_ft_occupancy(self, dpid, fto_log_file):
-        flows = len(self.flows[dpid])
-        log = [time.time(), dpid, flows]
-        self.add_log(log, fto_log_file)
-
-
-    def add_log(self, log, log_file): 
-        self.logger.info(f'\nLog: {log}\n')  
-
-        with open(log_file, 'a', newline = '') as logs:
-            writer = csv.writer(logs)
-            writer.writerow(log)
-
-
-    @set_ev_cls(ofp_event.EventOFPPortStatus, MAIN_DISPATCHER)
-    def _port_status_handler(self, ev):
-        msg = ev.msg
-        reason = msg.reason
-        port_no = msg.desc.port_no
-
-        ofproto = msg.datapath.ofproto
-        if reason == ofproto.OFPPR_ADD:
-            self.logger.info("port added %s", port_no)
-
-        elif reason == ofproto.OFPPR_DELETE:
-            self.logger.info("port deleted %s", port_no)
-
-        elif reason == ofproto.OFPPR_MODIFY:
-            self.logger.info("port modified %s", port_no)
-
-        else:
-            self.logger.info("Illeagal port state %s %s", port_no, reason)
-
-        if self.summary_created == False:
-            self.write_summary()
-            self.summary_created = True
-            
-
-    def get_time(self, timestamp):
-        datetime_obj = datetime.datetime.fromtimestamp(timestamp)
-        dt = datetime_obj.strftime("%d-%m-%Y %H:%M:%S")
-
-        return dt
-    
-
-    def write_summary(self):
-        summary = open(self.summary_file, "a")
-        self.logger.info('Writing summary file')
-        summary.writelines([
-            '\n==============================================================================================================\n',
-            'Classification Overview:\n',
-            '==============================================================================================================\n',
-            'Machine Learning Model: Cost Effective Multiclass Decision Tree Classifier',
-            'with best hyperparameters as:',
-             'Class Weights: [1:1.19, 2:10, 3:16.66],',
-            'Maximum Tree Depth: 10',
-            'Minimum Sample Split: 3',
-            'Criterion: Gini',
-            'Splitter: Best',
-            ''
-            'The Evaluation Matrix are:',
-            'Precision: 60%',
-            'Recall: 70%',
-            'F1 Score: 61%',
-            'Accuracy: 81%',
-            'The dataset is very imbalance, having 84% short flows, 10% medium flows and 6% long flows.',
-            ''
-        ])
-
-        summary.close()

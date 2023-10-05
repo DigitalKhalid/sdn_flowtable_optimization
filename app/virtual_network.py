@@ -95,7 +95,7 @@ def get_time(timestamp):
     return dt
     
 
-def main(hosts, network_duration):
+def main(hosts, network_duration, cli=False):
     topo = SimpleTopology(hosts)
     controller = RemoteController('ryu', ip='127.0.0.1', port=6633, protocols="OpenFlow13")
     net = Mininet(topo, controller=controller, link=TCLink)
@@ -115,20 +115,23 @@ def main(hosts, network_duration):
     info(f'Packet injection starts at {datetime.datetime.fromtimestamp(start_time).strftime("%d-%m-%Y %H:%M:%S")}')
     info(f' and will stop at {datetime.datetime.fromtimestamp(start_time + network_duration).strftime("%d-%m-%Y %H:%M:%S")}\n')
 
-    log_file = f'logs/log_injected_packets.csv'
-    columns = ['timestamp', 'src_ip', 'dst_ip', 'src_port', 'dst_port', 'protocol', 'pkt_size']
-    with open(log_file, 'w', newline = '') as logs:
-        writer = csv.writer(logs)
-        writer.writerow(columns)
+    if cli == False:
+        log_file = f'logs/log_injected_packets.csv'
+        columns = ['timestamp', 'src_ip', 'dst_ip', 'src_port', 'dst_port', 'protocol', 'pkt_size']
+        with open(log_file, 'w', newline = '') as logs:
+            writer = csv.writer(logs)
+            writer.writerow(columns)
 
-    # net.interact()
-    packet_count, injection_order = inject_packets(net, start_time, network_duration, packets, host_ips, log_file)
+        packet_count, injection_order = inject_packets(net, start_time, network_duration, packets, host_ips, log_file)
 
-    summary_file = f'logs/summary.txt'
-    write_summary(summary_file, host_ips, start_time, packet_count, injection_order)
+        summary_file = f'logs/summary.txt'
+        write_summary(summary_file, host_ips, start_time, packet_count, injection_order)
 
-    # Stop the network
-    net.stop()
+        # Stop the network
+        net.stop()
+
+    else:
+        net.interact()
 
 
 if __name__ == '__main__':

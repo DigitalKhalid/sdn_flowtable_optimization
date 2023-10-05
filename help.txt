@@ -1,7 +1,11 @@
 ----------------------------------------------------------------------------------------------
 Pre-requisites to run virtual network simulation
 ----------------------------------------------------------------------------------------------
-- Install Python 3.9.0
+- Ubuntu 22.04.3 LTS
+- Install Python 3.9.0 
+    - Open the link below and follow the procedure to install:
+      https://www.linuxcapable.com/how-to-install-python-3-9-on-ubuntu-linux/
+      
 - Open terminal and install following packages using root privileges:
     - Mininet, Pandas, Scapy, hping3, scikit-learn
         - sudo apt-get install mininet pandas scapy hping3 scikit-learn
