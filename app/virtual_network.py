@@ -16,12 +16,15 @@ from vn_settings import *
 warnings.filterwarnings("ignore")
 setLogLevel( 'info' )
         
-def inject_packets(net, start_time, network_duration, packets, host_ips, log_file):
+def inject_packets(net, start_time, network_duration, packets, host_ips):
     packet_count = 0
 
     while time.time() < start_time + network_duration:
-        pkt_iat = random.uniform(0, pkt_injection_time)
-        time.sleep(pkt_iat)
+        if fixed_injection_time == True:
+            time.sleep(pkt_injection_time)
+        else:
+            pkt_iat = random.uniform(0, pkt_injection_time)
+            time.sleep(pkt_iat)
 
         if pkt_injection_type == 'sequential':
             packet, data_size, injection_order = get_packet_sequential(packets, host_ips, packet_count)
@@ -31,13 +34,13 @@ def inject_packets(net, start_time, network_duration, packets, host_ips, log_fil
 
         packet_count = packet_count + 1
         
-        send_packet(net, packet, data_size, host_ips, log_file)
+        send_packet(net, packet, data_size, host_ips)
         
 
     return packet_count, injection_order
 
 
-def send_packet(net, packet, data_size, host_ips, log_file):
+def send_packet(net, packet, data_size, host_ips):
     src_ip = packet[IP].src
     dst_ip = packet[IP].dst
     src_port = packet[TCP].sport
@@ -56,7 +59,7 @@ def send_packet(net, packet, data_size, host_ips, log_file):
     # Add Log
     log = [time.time(), src_ip, dst_ip, src_port, dst_port, protocol, pkt_size]
     info(f'\nInjection Log: {log}\n')
-    add_log(log, log_file)
+    add_log(log, injection_log_file)
 
 
 def add_log(log, log_file):   
@@ -65,8 +68,8 @@ def add_log(log, log_file):
         writer.writerow(log)
 
 
-def write_summary(summary_file, hosts_ips, start_time, packet_count, injection_order):
-    summary = open(summary_file, "w")
+def write_summary(hosts_ips, start_time, packet_count, injection_order):
+    summary = open(simulation_summary_file, "w")
 
     summary.write(f'\nVirtual Network Simulation Summary\n')
     summary.write('\n==============================================================================================================\n')
@@ -116,16 +119,14 @@ def main(hosts, network_duration, cli=False):
     info(f' and will stop at {datetime.datetime.fromtimestamp(start_time + network_duration).strftime("%d-%m-%Y %H:%M:%S")}\n')
 
     if cli == False:
-        log_file = f'logs/log_injected_packets.csv'
         columns = ['timestamp', 'src_ip', 'dst_ip', 'src_port', 'dst_port', 'protocol', 'pkt_size']
-        with open(log_file, 'w', newline = '') as logs:
+        with open(injection_log_file, 'w', newline = '') as logs:
             writer = csv.writer(logs)
             writer.writerow(columns)
 
-        packet_count, injection_order = inject_packets(net, start_time, network_duration, packets, host_ips, log_file)
+        packet_count, injection_order = inject_packets(net, start_time, network_duration, packets, host_ips)
 
-        summary_file = f'logs/summary.txt'
-        write_summary(summary_file, host_ips, start_time, packet_count, injection_order)
+        write_summary(host_ips, start_time, packet_count, injection_order)
 
         # Stop the network
         net.stop()

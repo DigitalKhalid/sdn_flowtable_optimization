@@ -33,33 +33,31 @@ class my_controller(app_manager.RyuApp):
         super(my_controller, self).__init__(*args, **kwargs)
         self.mac_to_port = {}
         self.flows = {}
+        self.flow_entries = 0
 
-        self.idle_timeout = min_timeout
+        self.idle_timeout = fixed_timeout
         # self.hard_timeout = max_timeout
         self.threshold = flow_table_threshold
         self.start_time = int(time.time())
         
         # Load the machine learning model
-        self.model = joblib.load('models/model_dtc.pkl')
-        self.scaler = joblib.load('models/model_dtc_scaler.pkl')
+        self.model = joblib.load(ml_model_file)
+        self.scaler = joblib.load(ml_scaler_file)
 
-        self.log_file = f'logs/log_perdicted_timeout.csv'
         columns = ['timestamp', 'src_ip', 'dst_ip', 'src_port', 'dst_port', 'protocol', 'pkt_size', 'predicted_timeout']
-        with open(self.log_file, 'w', newline = '') as logs:
+        with open(prediction_log_file, 'w', newline = '') as logs:
             writer = csv.writer(logs)
             writer.writerow(columns)
 
-        self.fto_log_file = f'logs/log_flowtable_occupancy.csv'
         columns = ['timestamp', 'dpid', 'flows', 'eviction_reason']
-        with open(self.fto_log_file, 'w', newline = '') as logs:
+        with open(flowtable_log_file, 'w', newline = '') as logs:
             writer = csv.writer(logs)
             writer.writerow(columns)
 
-        self.summary_file = f'logs/summary.txt'
         self.summary_created = False
 
 
-    def add_flow(self, datapath, priority, match, actions, buffer_id=None, idle = min_timeout):
+    def add_flow(self, datapath, priority, match, actions, buffer_id=None, idle = fixed_timeout):
         ofproto = datapath.ofproto
         parser = datapath.ofproto_parser
 
@@ -124,10 +122,13 @@ class my_controller(app_manager.RyuApp):
         datapath.send_msg(out)
 
 
-    def log_ft_occupancy(self, dpid, fto_log_file):
+    def log_ft_occupancy(self, dpid):
         flows = len(self.flows[dpid])
-        log = [time.time(), dpid, flows]
-        self.add_log(log, fto_log_file)
+
+        if self.flow_entries != flows:
+            log = [time.time(), dpid, flows]
+            self.add_log(log, flowtable_log_file)
+            self.flow_entries = flows
 
 
     def add_log(self, log, log_file): 
@@ -146,26 +147,26 @@ class my_controller(app_manager.RyuApp):
     
 
     def write_summary(self):
-        summary = open(self.summary_file, "a")
+        summary = open(simulation_summary_file, "a")
         self.logger.info('Writing summary file')
         summary.writelines([
             '\n==============================================================================================================\n',
             'Classification Overview:\n',
             '==============================================================================================================\n',
-            'Machine Learning Model: Cost Effective Multiclass Decision Tree Classifier',
-            'with best hyperparameters as:',
-             'Class Weights: [1:1.19, 2:10, 3:16.66],',
-            'Maximum Tree Depth: 10',
-            'Minimum Sample Split: 3',
-            'Criterion: Gini',
-            'Splitter: Best',
+            'Machine Learning Model: Cost Effective Multiclass Decision Tree Classifier\n',
+            'with best hyperparameters as:\n',
+             'Class Weights: [1:1.19, 2:10, 3:16.66],\n',
+            'Maximum Tree Depth: 10\n',
+            'Minimum Sample Split: 3\n',
+            'Criterion: Gini\n',
+            'Splitter: Best\n',
             ''
-            'The Evaluation Matrix are:',
-            'Precision: 60%',
-            'Recall: 70%',
-            'F1 Score: 61%',
-            'Accuracy: 81%',
-            'The dataset is very imbalance, having 84% short flows, 10% medium flows and 6% long flows.',
+            'The Evaluation Matrix are:\n',
+            'Precision: 60%\n',
+            'Recall: 70%\n',
+            'F1 Score: 61%\n',
+            'Accuracy: 81%\n',
+            'The dataset is very imbalance, having 84% short flows, 10% medium flows and 6% long flows.\n',
             ''
         ])
 
@@ -216,7 +217,8 @@ class my_controller(app_manager.RyuApp):
 
             flows = len(self.flows[dpid])
             log = [time.time(), dpid, flows, reason]
-            self.add_log(log, self.fto_log_file)
+            self.add_log(log, flowtable_log_file)
+            self.flow_entries = flows
 
 
     @set_ev_cls(ofp_event.EventOFPPortStatus, MAIN_DISPATCHER)
@@ -328,7 +330,7 @@ class my_controller(app_manager.RyuApp):
 
                     # Add Log
                     log = [time.time(), src_ip, dst_ip, src_port, dst_port, proto, pkt_size, idle_timeout]
-                    self.add_log(log, self.log_file)
+                    self.add_log(log, prediction_log_file)
 
                     # Take action based on the prediction
                     if out_port != ofproto.OFPP_FLOOD:
@@ -341,7 +343,7 @@ class my_controller(app_manager.RyuApp):
                 else:
                     # Add Log
                     log = [time.time(), src_ip, dst_ip, src_port, dst_port, proto, pkt_size, self.idle_timeout]
-                    self.add_log(log, self.log_file)
+                    self.add_log(log, prediction_log_file)
 
                     if out_port != ofproto.OFPP_FLOOD:
                         if msg.buffer_id != ofproto.OFP_NO_BUFFER:
@@ -351,6 +353,6 @@ class my_controller(app_manager.RyuApp):
                             self.add_flow(datapath, 1, match, actions, idle=self.idle_timeout)
 
         # Log Flowtable Occupancy on every packet-in
-        self.log_ft_occupancy(dpid, self.fto_log_file)
+        self.log_ft_occupancy(dpid)
 
         self.send(msg, actions)

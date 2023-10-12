@@ -44,21 +44,24 @@ Settings to customize virtual network simulation
             - random
                 - It will send the packets from the source file in a random order.
 
+    - fixed_injection_time
+        - True: Each packet injected after time given in pkt_injection_time
+        - False: Each packet injected after random generated time
+
     - pkt_injection_time
         - This is the delay in seconds to send the packets ranges from 0 to the given value.
         - Default value is 0.05 means packets sends by the delay randomly choosen between 0 and 0.05.
+        - If fixed_injection_time is set to True, no random time is used.
+
+    - fixed_timeout
+        - If predict_timeout is set to False then this time will be used as idle timeout for each flow entry.
 
     - predict_timeout
-        - Simulate with or without predictive model
+        - True: Predicted timeout value using machine learning model is used as idle timeout for respective flow.
+        - False: fixed_timeout value is used as idle timeout for each flow entry. No predictive model is utilized.
     
     - flow_table_threshold          
         - Max number of flows in a flow table
-    
-    - min_timeout
-        - Mininum timeout value to be set (used as default timeout)
-
-    - max_timeout
-        - Maximum timeout value to be set (used as hard timeout)
 
     - timeout_short_flow
         - Idle timeout value for short flows
@@ -68,6 +71,8 @@ Settings to customize virtual network simulation
 
     - timeout_long_flow
         - Idle timeout value for long flows
+
+    - All other variables are path and names of files used in simulation or created by simulation. You can change the files as you require.
 
 ----------------------------------------------------------------------------------------------
 How to run virtual network?
@@ -85,6 +90,8 @@ How to run virtual network?
     - Create log file for predicted timeouts.
     - Create log file for flow table occupancy.
     - Create summary file. Log files and summary files will be created in logs folder.
+- To get the summary of flowtable occupancy:
+    - Use command: ./summary.sh
 
 ----------------------------------------------------------------------------------------------
 Asumptions
