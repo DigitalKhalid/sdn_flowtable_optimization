@@ -15,6 +15,7 @@ from vn_settings import *
 
 warnings.filterwarnings("ignore")
 setLogLevel( 'info' )
+injection_log = []
         
 def inject_packets(net, start_time, network_duration, packets, host_ips):
     packet_count = 0
@@ -31,11 +32,9 @@ def inject_packets(net, start_time, network_duration, packets, host_ips):
 
         elif pkt_injection_type == 'random':
             packet, data_size, injection_order = get_packet_random(packets, host_ips)
-
-        packet_count = packet_count + 1
         
         send_packet(net, packet, data_size, host_ips)
-        
+        packet_count = packet_count + 1
 
     return packet_count, injection_order
 
@@ -48,18 +47,36 @@ def send_packet(net, packet, data_size, host_ips):
     protocol = packet[IP].proto
     pkt_size = len(packet)
 
-    proto = '' if protocol == 6 else ' -1' if protocol == 17 else ' -2'
-    data_size = f' -d {data_size}' if data_size > 0 else ''
-
-    hostA = net.get(f'h{host_ips.index(src_ip) + 1}')
-
-    cmd = f'hping3 -c 1 -s {src_port} -p {dst_port}{data_size}{proto} {dst_ip}'
-    hostA.cmd(cmd)
-    
-    # Add Log
     log = [time.time(), src_ip, dst_ip, src_port, dst_port, protocol, pkt_size]
-    info(f'\nInjection Log: {log}\n')
-    add_log(log, injection_log_file)
+
+    if send_unique_pkts == True:
+        if log not in injection_log: 
+            proto = '' if protocol == 6 else ' -1' if protocol == 17 else ' -2'
+            data_size = f' -d {data_size}' if data_size > 0 else ''
+
+            hostA = net.get(f'h{host_ips.index(src_ip) + 1}')
+
+            cmd = f'hping3 -c 1 -s {src_port} -p {dst_port}{data_size}{proto} {dst_ip}'
+            hostA.cmd(cmd)
+    
+            # Add Log
+            info(f'\nInjection Log: {log}\n')
+            add_log(log, injection_log_file)
+            injection_log.append(log)
+            
+    else:
+        proto = '' if protocol == 6 else ' -1' if protocol == 17 else ' -2'
+        data_size = f' -d {data_size}' if data_size > 0 else ''
+
+        hostA = net.get(f'h{host_ips.index(src_ip) + 1}')
+
+        cmd = f'hping3 -c 1 -s {src_port} -p {dst_port}{data_size}{proto} {dst_ip}'
+        hostA.cmd(cmd)
+    
+        # Add Log
+        info(f'\nInjection Log: {log}\n')
+        add_log(log, injection_log_file)
+        injection_log.append(log)
 
 
 def add_log(log, log_file):   
