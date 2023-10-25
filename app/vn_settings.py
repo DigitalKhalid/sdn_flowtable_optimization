@@ -4,9 +4,11 @@ pkt_injection_type = 'sequential'   # sequential or random
 send_unique_pkts = True             # If True, ignore packet duplication and send unique packets only.
 
 fixed_injection_time = True         # If True, packets injected after pkt_injection_time value. If False random time generated.
-pkt_injection_time = 0.5              # This is a range starts from 0. Packets injected within this range at random interval.
+pkt_injection_time = 0.5            # This is a range starts from 0. Packets injected within this range at random interval.
 
 fixed_timeout = 2                   # This is default timeout value for each flow if predict_timeout = False
+ignore_tolerance = True             # There must be a tolerance in time to evacuate entity from a flow table. If True, tolerance will be ignored.
+
 predict_timeout = False             # Simulate with or without predictive model
 flow_table_threshold = 1000         # Max number of flows in a flow table
 

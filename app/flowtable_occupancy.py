@@ -15,14 +15,24 @@ for i in range(len(data)):
             log[time]['flows_added'] = log[time]['flows_added'] + 1
         else:
             if data['eviction_reason'].iloc[i] == 'IDLE TIMEOUT':
-                log[time]['idle_timeout_eviction'] = log[time]['idle_timeout_eviction'] + 1
+                if ignore_tolerance == False:
+                    log[time]['idle_timeout_eviction'] = log[time]['idle_timeout_eviction'] + 1
         
             elif data['eviction_reason'].iloc[i] != 'IDLE TIMEOUT':
                 log[time]['other_eviction'] = log[time]['other_eviction'] + 1
 
-        log[time]['current_occupancy'] = data['flows'].iloc[i]
-        last_occupancy = last_occupancy + 1
-    
+        if ignore_tolerance == False:
+            log[time]['current_occupancy'] = data['flows'].iloc[i]
+            last_occupancy = last_occupancy + 1
+        
+        else:
+            log[time]['current_occupancy'] = log[time]['last_occupancy'] + log[time]['flows_added'] - log[time]['idle_timeout_eviction'] - log[time]['other_eviction']
+            last_occupancy = log[time]['current_occupancy']
+
+            if log[time]['current_occupancy'] < 0:
+                log[time]['other_eviction'] = log[time]['other_eviction'] + log[time]['current_occupancy']
+                log[time]['current_occupancy'] = 0
+
     else:
         start_time = data['timestamp'].iloc[i]
         time = time + 1
@@ -33,7 +43,12 @@ for i in range(len(data)):
             flow_added = 1
         else:
             if data['eviction_reason'].iloc[i] == 'IDLE TIMEOUT':
-                idle_eviction = 1
+                if ignore_tolerance == True:
+                    idle_eviction = log[time - fixed_timeout]['flows_added']
+
+                else:
+                    idle_eviction = 1
+
                 other_eviction = 0
                 flow_added = 0
             elif data['eviction_reason'].iloc[i] != 'IDLE TIMEOUT':
