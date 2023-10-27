@@ -13,11 +13,12 @@ Host IP Addresses: ['10.0.0.1', '10.0.0.2', '10.0.0.3', '10.0.0.4', '10.0.0.5']
 ==============================================================================================================
 Packet Injection Overview:
 ==============================================================================================================
-Start Time: 24-10-2023 12:03:11
-End Time: 24-10-2023 12:04:11
-Total Packets Injected: 103
+Start Time: 27-10-2023 23:43:32
+End Time: 27-10-2023 23:44:33
+Total Packets Injected: 108
 Packets injected using the packet trace file from the MAWI dataset.
 The packets injected from the trace file in sequential order.
+The flowtable threshold was 10 with 90% safe limit.
 
 ==============================================================================================================
 Classification Overview:

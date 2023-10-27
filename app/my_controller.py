@@ -37,7 +37,7 @@ class my_controller(app_manager.RyuApp):
 
         self.idle_timeout = fixed_timeout
         # self.hard_timeout = max_timeout
-        self.threshold = flow_table_threshold
+        self.threshold = flow_table_threshold * threshold_safe_limit / 100
         self.start_time = int(time.time())
         
         # Load the machine learning model
@@ -84,8 +84,35 @@ class my_controller(app_manager.RyuApp):
         self.perform_flow_check(datapath)
         
 
-    def proactive_deletion(self, datapath):
-        pass
+    def remove_flow_entry(self, cookie_id, datapath):
+        ofproto = datapath.ofproto
+        parser = datapath.ofproto_parser
+
+        # Create a FlowMod message with the DELETE command
+        mod = parser.OFPFlowMod(
+                datapath=datapath,
+                cookie=cookie_id,
+                cookie_mask=0xFFFFFFFFFFFFFFFF,
+                table_id=ofproto.OFPTT_ALL,
+                command=ofproto.OFPFC_DELETE,
+                out_port=ofproto.OFPP_ANY,
+                out_group=ofproto.OFPG_ANY
+            )
+
+        # Send the FlowMod message to remove the flow entry
+        datapath.send_msg(mod)
+
+
+    def proactive_deletion(self, datapath, deletion_count):
+        # Sort the dictionary by timestamp
+        LRU_flows = dict(sorted(self.flows[datapath.id].items(), key=lambda item: item[1], reverse=False))
+
+        LRU_flows = list(LRU_flows)[:deletion_count]
+        self.logger.info(f'LRU Flows: {LRU_flows}')
+
+        for cookie_id in LRU_flows:
+            self.logger.info(f'Deleting flow: Cookie ID {cookie_id}, Timestamp: {self.flows[datapath.id][cookie_id]}')
+            self.remove_flow_entry(cookie_id, datapath)
 
 
     def perform_flow_check(self, datapath):
@@ -93,8 +120,9 @@ class my_controller(app_manager.RyuApp):
         total_active_flows = len(self.flows[dpid])
 
         if total_active_flows >= self.threshold :
-            self.logger.info(f'Flow threshold {self.threshold} reached in dpid {dpid}')
-            self.proactive_deletion(datapath)
+            deletion_count = int(total_active_flows - self.threshold + 1)
+            self.logger.info(f'Flow threshold {self.threshold} reached in dpid {dpid}. Flow to be removed are {deletion_count}')
+            self.proactive_deletion(datapath, deletion_count)
 
 
     def get_idle_timeout(self, flow_class):
