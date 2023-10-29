@@ -111,6 +111,6 @@ You can capture the packets using WireShark. Open WireShark using following comm
     - sudo wireshark
 
 ----------------------------------------------------------------------------------------------
-Thank you
+Thank you.
 For more information, please email: po.mwts@gmail.com
 ----------------------------------------------------------------------------------------------
