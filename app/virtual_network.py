@@ -124,6 +124,12 @@ def main(hosts, network_duration, cli=False):
     # Start the network
     net.start()
 
+    # Set flowtabel threshold to switch
+    s1 = net.get('s1')
+    command = f'sudo ovs-vsctl -- --id=@ft create Flow_Table flow_limit={str(flow_table_threshold)} overflow_policy=refuse -- set Bridge {s1} flow_tables=0=@ft'
+    s1.cmd(command)
+    print(f'Entity limit of {s1} flowtable 0 is set to {flow_table_threshold}')
+
     # set host IP addresses
     host_ips = topo.set_ip_addresses(net, hosts)
     info(f'host ips: {host_ips}\n')

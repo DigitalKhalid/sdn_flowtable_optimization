@@ -122,7 +122,9 @@ class my_controller(app_manager.RyuApp):
         if total_active_flows >= self.threshold :
             deletion_count = int(total_active_flows - self.threshold + 1)
             self.logger.info(f'Flow threshold {self.threshold} reached in dpid {dpid}. Flow to be removed are {deletion_count}')
-            self.proactive_deletion(datapath, deletion_count)
+
+            if proactive_deletion == True:
+                self.proactive_deletion(datapath, deletion_count)
 
 
     def get_idle_timeout(self, flow_class):

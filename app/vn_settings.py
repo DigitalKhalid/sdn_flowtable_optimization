@@ -13,6 +13,8 @@ predict_timeout = False             # Simulate with or without predictive model
 flow_table_threshold = 10           # Max number of flows in a flow table
 threshold_safe_limit = 90           # Percentage of flow table threshold for safe limit. Considered for preactive deletion.
 
+proactive_deletion = True           # If true, LRU flows will be removed from flow table when crossing threshold safe limit.
+
 timeout_short_flow = 1              # Idle timeout value for short flows
 timeout_medium_flow = 5             # Idle timeout value for medium flows
 timeout_long_flow = 11              # Idle timeout value for long flows
