@@ -26,7 +26,9 @@ ml_scaler_file = 'models/model_dtc_scaler.pkl'
 
 # Log Files
 injection_log_file = 'logs/log_injected_packets.csv'
+captured_log_file = 'logs/log_captured_packets.csv'
 prediction_log_file = 'logs/log_perdicted_timeout.csv'
+latency_log_file = 'logs/log_packet_latency.csv'
 
 flowtable_log_file = './logs/log_flowtable_occupancy.csv'
 flowtable_summary_file ='./logs/summary_flowtable_occupancy.csv'
