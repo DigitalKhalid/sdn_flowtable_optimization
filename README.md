@@ -50,6 +50,9 @@ Settings to customize virtual network simulation
             - random
                 - It will send the packets from the source file in a random order.
 
+    - send_unique_packets
+        - If True, ignore packet duplication and send unique packets only
+
     - fixed_injection_time
         - True: Each packet injected after time given in pkt_injection_time
         - False: Each packet injected after random generated time
@@ -68,6 +71,12 @@ Settings to customize virtual network simulation
     
     - flow_table_threshold          
         - Max number of flows in a flow table
+
+    - threshold_safe_limit
+        - Percentage of flow table threshold for safe limit. Considered for preactive deletion
+
+    - proactive_deletion
+        - If true, LRU flows will be removed from flow table when crossing threshold safe limit
 
     - timeout_short_flow
         - Idle timeout value for short flows
@@ -98,6 +107,26 @@ How to run virtual network?
     - Create summary file. Log files and summary files will be created in logs folder.
 - To get the summary of flowtable occupancy:
     - Use command: ./summary.sh
+
+----------------------------------------------------------------------------------------------
+How to generate summary of flowtable occupancy?
+----------------------------------------------------------------------------------------------
+- Open the terminal from the main directory.
+- Use command: ./summary.sh
+- This command will do the following:
+    - Create summary of flowtabel occupancy. Log files and summary files will be created in logs folder.
+
+----------------------------------------------------------------------------------------------
+How to get latency of injected packets?
+----------------------------------------------------------------------------------------------
+- You calculate latency, you need to capture the packets using WireShark during simulation. 
+- Export the captured log as csv file having same columns as packet_injection_log.csv file
+- Rename the captured log file as log_captured_packets.csv
+- Copy this file in logs directory
+- Open the terminal from the main directory.
+- Use command: ./latency.sh
+- This command will do the following:
+    - Create latency log file. Log files and summary files will be created in logs folder.
 
 ----------------------------------------------------------------------------------------------
 Asumptions
