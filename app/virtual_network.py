@@ -103,7 +103,7 @@ def write_summary(hosts_ips, start_time, packet_count, injection_order):
     summary.write(f'Start Time: {get_time(start_time)}\n')
     summary.write(f'End Time: {get_time(time.time())}\n')
     summary.write(f'Total Packets Injected: {packet_count}\n')
-    summary.write(f'Packets injected using the packet trace file from the MAWI dataset.\n')
+    summary.write(f'Packets injected using the packet trace file from the {DATASET} dataset.\n')
     summary.write(f'The packets injected from the trace file in {injection_order} order.\n')
     summary.write(f'The flowtable threshold was {flow_table_threshold} with {threshold_safe_limit}% safe limit.\n')
     summary.close()

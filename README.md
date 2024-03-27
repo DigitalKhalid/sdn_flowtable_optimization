@@ -87,6 +87,9 @@ Settings to customize virtual network simulation
     - timeout_long_flow
         - Idle timeout value for long flows
 
+    - DATASET
+        - Select dataset to be used during simulation. Options are 'univ2' and 'mawi'.
+
     - All other variables are path and names of files used in simulation or created by simulation. You can change the files as you require.
 
 ----------------------------------------------------------------------------------------------

@@ -1,5 +1,5 @@
 vn_hosts = 5                        # No. of hosts ranges from 2 ~ 25
-vn_duration = 60                    # Duration in seconds
+vn_duration = 15                    # Duration in seconds
 pkt_injection_type = 'sequential'   # sequential or random
 send_unique_pkts = True             # If True, ignore packet duplication and send unique packets only.
 
@@ -19,20 +19,22 @@ timeout_short_flow = 1              # Idle timeout value for short flows
 timeout_medium_flow = 5             # Idle timeout value for medium flows
 timeout_long_flow = 11              # Idle timeout value for long flows
 
+DATASET = 'univ2'                   # Options are 'univ2' and 'mawi'
+
 
 # Machine Learning Model Files
-ml_model_file = 'models/univ2/model_dtc.pkl'
-ml_scaler_file = 'models/univ2/model_dtc_scaler.pkl'
+ml_model_file = f'models/{DATASET}/model_dtc.pkl'
+ml_scaler_file = f'models/{DATASET}/model_dtc_scaler.pkl'
 
 # Log Files
-injection_log_file = 'logs/univ2/log_injected_packets.csv'
-captured_log_file = 'logs/univ2/log_captured_packets.csv'
-prediction_log_file = 'logs/univ2/log_perdicted_timeout.csv'
-latency_log_file = 'logs/univ2/log_packet_latency.csv'
+injection_log_file = f'logs/{DATASET}/log_injected_packets.csv'
+captured_log_file = f'logs/{DATASET}/log_captured_packets.csv'
+prediction_log_file = f'logs/{DATASET}/log_perdicted_timeout.csv'
+latency_log_file = f'logs/{DATASET}/log_packet_latency.csv'
 
-flowtable_log_file = './logs/univ2/log_flowtable_occupancy.csv'
-flowtable_summary_file ='./logs/univ2/summary_flowtable_occupancy.csv'
+flowtable_log_file = f'./logs/{DATASET}/log_flowtable_occupancy.csv'
+flowtable_summary_file = f'./logs/{DATASET}/summary_flowtable_occupancy.csv'
 
-simulation_summary_file = 'logs/univ2/summary.txt'
+simulation_summary_file = f'logs/{DATASET}/summary.txt'
 
-TRACE_FILE = 'datasets/univ2/univ2_packet_trace.csv'
+TRACE_FILE = f'datasets/{DATASET}_packet_trace.csv'
