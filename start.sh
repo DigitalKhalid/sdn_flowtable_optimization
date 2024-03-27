@@ -1,5 +1,6 @@
 #!/bin/bash
 
+
 # activate virtual network
 echo "Virtual Environment Activated"
 echo

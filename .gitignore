@@ -1,6 +1,12 @@
-# Directories
-logs
-datasets
+# Ignore all files within the logs directory
+logs/mawi/*
+logs/univ2/*
+datasets/*
+
+# But do not ignore the log directories
+!logs/mawi/
+!logs/univ2/
+!datasets/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
