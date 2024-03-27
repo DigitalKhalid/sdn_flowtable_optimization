@@ -2,13 +2,13 @@ from scapy.all import Ether, IP, TCP, Raw, ICMP
 import pandas as pd
 import random
 import warnings
+from vn_settings import *
 
 
 warnings.filterwarnings("ignore")
 
 def load_trace_file():
-    trace_file = 'datasets/mawi_packet_trace.csv'
-    packets = pd.read_csv(trace_file)
+    packets = pd.read_csv(TRACE_FILE)
 
     return packets
 

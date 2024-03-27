@@ -21,16 +21,18 @@ timeout_long_flow = 11              # Idle timeout value for long flows
 
 
 # Machine Learning Model Files
-ml_model_file = 'models/model_dtc.pkl'
-ml_scaler_file = 'models/model_dtc_scaler.pkl'
+ml_model_file = 'models/univ2/model_dtc.pkl'
+ml_scaler_file = 'models/univ2/model_dtc_scaler.pkl'
 
 # Log Files
-injection_log_file = 'logs/log_injected_packets.csv'
-captured_log_file = 'logs/log_captured_packets.csv'
-prediction_log_file = 'logs/log_perdicted_timeout.csv'
-latency_log_file = 'logs/log_packet_latency.csv'
+injection_log_file = 'logs/univ2/log_injected_packets.csv'
+captured_log_file = 'logs/univ2/log_captured_packets.csv'
+prediction_log_file = 'logs/univ2/log_perdicted_timeout.csv'
+latency_log_file = 'logs/univ2/log_packet_latency.csv'
 
-flowtable_log_file = './logs/log_flowtable_occupancy.csv'
-flowtable_summary_file ='./logs/summary_flowtable_occupancy.csv'
+flowtable_log_file = './logs/univ2/log_flowtable_occupancy.csv'
+flowtable_summary_file ='./logs/univ2/summary_flowtable_occupancy.csv'
 
-simulation_summary_file = 'logs/summary.txt'
+simulation_summary_file = 'logs/univ2/summary.txt'
+
+TRACE_FILE = 'datasets/univ2/univ2_packet_trace.csv'
